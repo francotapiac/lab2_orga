@@ -1,0 +1,121 @@
+.data
+	dividendo: .word 1
+	divisor: .word 1
+	parteEntera: .double 1.00
+	parteDecima: .double 0.10
+	parteCentesima: .double 0.01
+	ceroDouble: .double 0.00
+	mensajeSalida: .asciiz "El resultado de la división es: "
+	punto: .asciiz "."
+.text
+
+	main:
+		lw $s0,dividendo($zero)	# dividendo
+		lw $s1,divisor($zero)	# divisor
+		addi $t0,$s0,0		# resto
+		addi $t1,$zero,0	# salida auxiliar = 0 (contador)
+		
+		addi $s2,$zero,0	# salida parte entera
+		addi $t2,$zero,0	# tipo de numero = entero
+		jal dividirIterativo
+		
+		
+		addi $s3,$zero,0	# salida parte decima
+		addi $t2,$zero,1	# tipo de numero = decima
+		jal dividirIterativo
+		
+	
+		addi $s4,$zero,0	# salida parte centesima
+		addi $t2,$zero,2	# tipo de numero = centesima
+		jal dividirIterativo
+		
+		ldc1 $f0,parteEntera
+		ldc1 $f2,parteDecima
+		ldc1 $f4,parteCentesima
+		ldc1 $f6,ceroDouble
+		
+		addi $t0,$zero,0	# contador = 0
+		add $t1,$s2,0		# largo iteración
+		add.d $f8,$f0,$f6	# $f8 = 1.00
+		add.d $f10,$f6,$f6	# salida auxiliar parte entera = 0
+		jal multiplicarDouble
+		add.d $f0,$f10,$f6	# salida verdadera parte entera
+		
+		addi $t0,$zero,0	# contador = 0
+		add $t1,$s3,0		# largo iteración
+		add.d $f8,$f2,$f6	# $f8 = 0.10
+		add.d $f10,$f6,$f6	# salida auxiliar parte decima = 0
+		jal multiplicarDouble
+		add.d $f2,$f10,$f6	# salida verdadera parte decima
+		
+		addi $t0,$zero,0	# contador = 0
+		add $t1,$s4,0		# largo iteración
+		add.d $f8,$f4,$f6	# $f8 = 0.01
+		add.d $f10,$f6,$f6	# salida auxiliar parte entera = 0
+		jal multiplicarDouble
+		add.d $f4,$f10,$f6	# salida verdadera parte centesima
+		
+		add.d $f0,$f0,$f2	# parte entera + parte decima (x.00 + 0.y0)
+		add.d $f0,$f0,$f4	# parte entera + parte decima + parte centesima 
+					# (x.00 + 0.y0 + 0.0z)
+		
+		li $v0,4
+      		la $a0, mensajeSalida	#Imprime mensaje en pantalla
+      		syscall  	
+      			
+		li $v0,3
+		add.d $f12, $f0, $f6	# Muestra resultado entero en pantalla
+      		syscall  
+      	
+      		
+		addi $v0, $zero, 10	
+		syscall		
+		
+	dividirIterativo:
+		blt $t0,$s1,guardarDatos
+		sub $t0,$t0,$s1		# numero = numero  - divisor (resto)
+		addi $t1,$t1,1		# cantidad de veces que cabe el divisor en numero
+		j dividirIterativo
+	
+	guardarDatos:
+		beq $t2,0,guardarDatoEntero
+		beq $t2,1,guardarDatoDecima
+		beq $t2,2,guardarDatoCentesima
+		
+	guardarDatoEntero:
+		add $s2,$t1,0		# $s2 = parte entera
+		addi $t1,$zero,0	# restaurando valor de salida auxiliar = 0 (contador)
+		addi $t5,$zero,0	# contador multiplicación
+		add $t6,$t0,0		# auxiliar para multiplicar
+		j multiplicarPorDiez
+	
+	guardarDatoDecima:
+		add $s3,$t1,0		# $s3 = parte decima
+		addi $t1,$zero,0	# restaurando valor de salida auxiliar = 0 (contador)
+		addi $t5,$zero,0	# contador multiplicación
+		add $t6,$t0,0		# auxiliar para multiplicar
+		j multiplicarPorDiez
+	
+	guardarDatoCentesima:
+		add $s4,$t1,0		# $s4 = parte centesima
+		addi $t1,$zero,0	# restaurando valor de salida auxiliar = 0 (contador)
+		addi $t5,$zero,0	# contador multiplicación
+		add $t6,$t0,0		# auxiliar para multiplicar
+		j multiplicarPorDiez
+		
+	multiplicarPorDiez:
+		beq $t5,9,retornarMain
+		add $t0,$t0,$t6		
+		add $t5,$t5,1
+		j multiplicarPorDiez
+	
+	multiplicarDouble:
+		beq $t0,$t1,retornarMain
+		add.d $f10,$f10,$f8
+		add $t0,$t0,1
+		j multiplicarDouble
+		
+	retornarMain:
+		jr $ra
+	
+	

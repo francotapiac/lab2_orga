@@ -1,0 +1,414 @@
+.data
+	
+	solicitarNumero: .asciiz "Por favor, ingrese un entero no negativo: "
+	solicitarGrado: .asciiz "Ingrese el orden: "
+	entregarResultadoSeno: .asciiz "seno =  "
+	entregarResultadoCoseno: .asciiz "coseno = "
+	entregarResultadoExp: .asciiz "exponencial = "
+	saltoLinea: .asciiz "\n"
+	
+	ceroFlotante: .double 0.00
+	resultadoDivision: .double 0.00
+	resultadoEntero: .double 1.00
+	resultadoDecima: .double 0.10
+	resultadoCentesima: .double 0.01
+	
+.text
+
+	# 1.----------------------------------------- Main --------------------------------------------------
+	
+	main:
+		jal obtenerNumeros
+		move $s0,$v0		# $s0 = numero ingresado
+		
+		jal obtenerOrden	
+		move $s1,$v0		# $s1 = grado ingresado
+		
+		addi $t9,$zero,0	# $t9 = 0 (contador de grado)
+		addi $t8,$zero,1  	# $t8 = 0 o $t8 = 1 (0: resultado división negativo
+					#                    1: resultado división positivo)
+		ldc1 $f12,ceroFlotante
+		jal calcularSeno
+		add.d $f14,$f12,$f14	
+		jal mostrarResultadoSeno
+		jal mostrarSaltoLinea
+		
+		addi $t9,$zero,0	# $t9 = 0 (contador de grado)
+		addi $t8,$zero,1  	# $t8 = 0 o $t8 = 1 (0: resultado división negativo
+					#                    1: resultado división positivo)
+		ldc1 $f12,ceroFlotante
+		jal calcularCoseno
+		add.d $f16,$f12,$f16	
+		jal mostrarResultadoCoseno
+		jal mostrarSaltoLinea
+		
+		addi $t9,$zero,0	# $t9 = 0 (contador de grado)
+		ldc1 $f12,ceroFlotante
+		jal calcularExponencial
+		add.d $f18,$f12,$f18	
+		jal mostrarResultadoExponencial
+		
+		
+		
+		j fin
+	
+	# 2.----------------------------------- Solicitud por consola -----------------------------------------
+	
+	obtenerNumeros:
+		li $v0,4
+      		la $a0, solicitarNumero	# Imprime mensaje en pantalla
+      		syscall  
+      		li $v0, 5		# Recibe primer numero
+		syscall
+      		jr $ra
+      		
+      	obtenerOrden:
+		li $v0,4
+      		la $a0, solicitarGrado	# Imprime mensaje en pantalla
+      		syscall  
+      		li $v0, 5		# Recibe primer numero
+		syscall
+      		jr $ra
+      	
+      	mostrarResultadoSeno:
+      		
+  		
+      		li $v0,4
+      		la $a0, entregarResultadoSeno	#Imprime mensaje en pantalla
+      		syscall
+      		
+      		li $v0,3
+      		mov.d $f14,$f14
+      		syscall
+      		
+		j retornarCalculo 
+	
+	mostrarResultadoCoseno:
+      		
+
+      		li $v0,4
+      		la $a0, entregarResultadoCoseno	#Imprime mensaje en pantalla
+      		syscall
+      		
+      		li $v0,3
+		mov.d $f16,$f16
+      		syscall
+      		
+		j retornarCalculo 
+		
+	mostrarResultadoExponencial:
+      		
+      		li $v0,4
+      		la $a0, entregarResultadoExp	#Imprime mensaje en pantalla
+      		syscall
+      		
+      		li $v0,3
+		mov.d $f18,$f18
+      		syscall
+      		
+		j retornarCalculo         		
+      	
+      	mostrarSaltoLinea:
+ 		li $v0,4
+ 		la $a0,saltoLinea 
+ 		syscall
+ 		
+ 		j retornarCalculo
+ 		 		
+      	# 3.--------------------------------- Calculo de funciones -----------------------------------------	
+      	
+      	# 3.1------------------------------- Calculo de función seno ----------------------------------------
+      	calcularSeno:
+      		
+      		bgt $t9,$s1,retornarCalculoAnidadoFunciones
+      		addi $sp,$sp,-4			# Aumentando espacio en memoria
+      		sw $ra,($sp)	
+      		
+      		# Obtener datos
+      		jal obtenerDatosSeno		# Se obtienen datos para dividir y multiplicar
+      		
+      		# Calcular división
+      		# X ^ (2n + 1) / (2n + 1)!
+      		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f8,$f4,$f10		# Auxiliar para dividir = X ^ (2n + 1)
+		ldc1 $f0,resultadoDivision	# $f0 = resultado división
+		
+		ldc1 $f2,resultadoEntero	# $f2 = 1.00
+		jal division			# resultado con parte entera
+		addi $t5,$zero,0		# contador multiplicación por 10
+		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f10,$f8,$f10		# auxiliar resultado parte entera
+		jal multiplicarRestoPorDiez
+		
+		ldc1 $f2,resultadoDecima	# $f2 = 0.10
+		jal division			# resultado parte entera + parte decima
+		addi $t5,$zero,0
+		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f10,$f8,$f10		# auxiliar resultado parte decima
+		jal multiplicarRestoPorDiez
+		
+		ldc1 $f2,resultadoCentesima	# $f2 = 0.01
+		jal division			# resultado parte entera + parte decima + parte centesima
+		
+		# Calcular sumatoria
+		jal calcularSumatoria
+			
+		add $t9,$t9,1
+				
+      		j calcularSeno
+      		
+      	obtenerDatosSeno:
+      		
+      		addi $sp,$sp,-4			# Aumentando espacio en memoria
+      		sw $ra,($sp)			# Guardando dirección de retorno al main	
+      		
+      		# Obtención 2n
+      		addi $t0,$zero,0		# Contador para multiplicación
+		addi $t1,$zero,0		# Resultado multiplicación: $t1 = 2n
+		jal multiplicarGrado		
+		
+		# Obtención 2n + 1
+		addi $t1,$t1,1			# $t1 = 2n + 1
+		
+		# Obtención X ^ (2n + 1)
+		addi $t0,$zero,0		# Contador para elevar
+		ldc1 $f4,resultadoEntero	# $f4 = X ^ (2n + 1)
+		jal elevarValorDeX
+		
+		# Obtención (2n + 1)!
+		addi $t0,$t1,0			# Contador para factorial: $t0 = (2n + 1)
+		ldc1 $f6,resultadoEntero	# $f6 = (2n + 1)!
+		jal factorial
+			
+		j retornarCalculoAnidadoFunciones
+		
+      	
+      	# 3.2------------------------------ Calculo de función coseno ---------------------------------------
+      	calcularCoseno:
+      		
+      		bgt $t9,$s1,retornarCalculoAnidadoFunciones
+      		addi $sp,$sp,-4			# Aumentando espacio en memoria
+      		sw $ra,($sp)	
+      		
+      		# Obtener datos
+      		jal obtenerDatosCoseno		# Se obtienen datos para dividir y multiplicar
+      		
+      		# Calcular división
+      		# X ^ (2n + 1) / (2n + 1)!
+      		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f8,$f4,$f10		# Auxiliar para dividir = X ^ (2n)
+		ldc1 $f0,resultadoDivision	# $f0 = resultado división
+		
+		ldc1 $f2,resultadoEntero	# $f2 = 1.00
+		jal division			# resultado con parte entera
+		addi $t5,$zero,0		# contador multiplicación por 10
+		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f10,$f8,$f10		# auxiliar resultado parte entera
+		jal multiplicarRestoPorDiez
+		
+		ldc1 $f2,resultadoDecima	# $f2 = 0.10
+		jal division			# resultado parte entera + parte decima
+		addi $t5,$zero,0
+		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f10,$f8,$f10		# auxiliar resultado parte decima
+		jal multiplicarRestoPorDiez
+		
+		ldc1 $f2,resultadoCentesima	# $f2 = 0.01
+		jal division			# resultado parte entera + parte decima + parte centesima
+		
+		# Calcular sumatoria
+		jal calcularSumatoria
+			
+		add $t9,$t9,1
+				
+      		j calcularCoseno
+      		
+      	obtenerDatosCoseno:
+      		
+      		addi $sp,$sp,-4			# Aumentando espacio en memoria
+      		sw $ra,($sp)			# Guardando dirección de retorno al main	
+      		
+      		# Obtención 2n
+      		addi $t0,$zero,0		# Contador para multiplicación
+		addi $t1,$zero,0		# Resultado multiplicación: $t1 = 2n
+		jal multiplicarGrado		
+		
+		
+		# Obtención X ^ (2n)
+		addi $t0,$zero,0		# Contador para elevar
+		ldc1 $f4,resultadoEntero	# $f4 = X ^ (2n)
+		jal elevarValorDeX
+		
+		# Obtención (2n + 1)!
+		addi $t0,$t1,0			# Contador para factorial: $t0 = (2n)
+		ldc1 $f6,resultadoEntero	# $f6 = (2n)!
+		jal factorial
+			
+		j retornarCalculoAnidadoFunciones
+		
+	
+	# 3.3------------------------------ Calculo de función coseno ---------------------------------------
+      	calcularExponencial:
+      		
+      		bgt $t9,$s1,retornarCalculoAnidadoFunciones
+      		addi $sp,$sp,-4			# Aumentando espacio en memoria
+      		sw $ra,($sp)	
+      		
+      		# Obtener datos
+      		jal obtenerDatosExponencial		# Se obtienen datos para dividir y multiplicar
+      		
+      		# Calcular división
+      		# X ^ (n ) / (n)!
+      		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f8,$f4,$f10		# Auxiliar para dividir = X ^ (n)
+		ldc1 $f0,resultadoDivision	# $f0 = resultado división
+		
+		ldc1 $f2,resultadoEntero	# $f2 = 1.00
+		jal division			# resultado con parte entera
+		addi $t5,$zero,0		# contador multiplicación por 10
+		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f10,$f8,$f10		# auxiliar resultado parte entera
+		jal multiplicarRestoPorDiez
+		
+		ldc1 $f2,resultadoDecima	# $f2 = 0.10
+		jal division			# resultado parte entera + parte decima
+		addi $t5,$zero,0
+		ldc1 $f10,ceroFlotante		# Auxiliar = 0
+		add.d $f10,$f8,$f10		# auxiliar resultado parte decima
+		jal multiplicarRestoPorDiez
+		
+		ldc1 $f2,resultadoCentesima	# $f2 = 0.01
+		jal division			# resultado parte entera + parte decima + parte centesima
+		
+		# Calcular sumatoria
+		jal sumarDivision
+			
+		add $t9,$t9,1
+				
+      		j calcularExponencial
+      		
+      	obtenerDatosExponencial:
+      		
+      		addi $sp,$sp,-4			# Aumentando espacio en memoria
+      		sw $ra,($sp)			# Guardando dirección de retorno al main	
+      		
+      		# Obtención n
+		addi $t1,$t9,0			# Resultado multiplicación: $t1 = n	
+		
+		# Obtención X ^ (n)
+		addi $t0,$zero,0		# Contador para elevar
+		ldc1 $f4,resultadoEntero	# $f4 = X ^ (n)
+		jal elevarValorDeX
+		
+		# Obtención (2n + 1)!
+		addi $t0,$t1,0			# Contador para factorial: $t0 = (n)
+		ldc1 $f6,resultadoEntero	# $f6 = (n)!
+		jal factorial
+			
+		j retornarCalculoAnidadoFunciones
+      	
+      	
+      	
+      	
+      	# 4.----------------------------------- Datos a utilizar -------------------------------------------
+      	
+      	# 4.1----------------------------- Operaciones preguntas anteriores --------------------------------
+      	
+      	# Obtención factorial
+      	factorial:
+      		addi $sp,$sp,-8		
+      		sw $ra,($sp)	
+      		sw $s2,4($sp)
+      		beq $t0,0,retornarCalculoAnidado	
+      		move $s2,$t0				# Se guarda en memoria valor de $t0 = fact(n-1)
+      		sub $t0,$t0,1
+      		jal factorial
+      		
+      		addi $t4,$zero,1			# contador multiplación = 0
+      		ldc1 $f10,ceroFlotante			# auxiliar = 0
+		add.d $f8,$f6,$f10			# auxiliar = n
+		j multiplicarFactorialIterativo
+	
+	multiplicarFactorialIterativo:
+		beq $t4,$s2,retornarCalculoAnidado	# Se repite n veces el factorial(n-1)
+		add.d $f6,$f6,$f8			# auxiliar = auxiliar + n
+		add $t4,$t4,1				# contador = contador + 1
+		j multiplicarFactorialIterativo
+		
+	# División X ^ (2n + 1) / X ^ (2n) / X ^ n  con factorial
+	division:
+		c.lt.d $f8,$f6
+		bc1t retornarCalculo
+		sub.d $f8,$f8,$f6		# numero = numero  - divisor (resto)
+		add.d $f0,$f0,$f2		# cantidad de veces que cabe el divisor en numero
+		j division
+	
+	multiplicarRestoPorDiez:
+		beq $t5,9,retornarCalculo
+		add.d $f8,$f8,$f10		
+		add $t5,$t5,1
+		j multiplicarRestoPorDiez
+      	
+      	# 4.2------------------------------ Operaciones pregunta actual ------------------------------------
+      	
+      	# Obtención de 2n
+      	multiplicarGrado:
+      		beq $t0,2,retornarCalculo
+      		add $t1,$t1,$t9
+      		addi $t0,$t0,1
+      		j multiplicarGrado
+      	
+      	# Obtención X ^ (2n + 1) / X ^ (2n) / X ^ n	
+      	elevarValorDeX:
+      		addi $sp,$sp,-8		
+      		sw $ra,($sp)	
+      		sw $s2,4($sp)
+      		beq $t0,$t1,retornarCalculoAnidado	# Si contador = elevado
+      		move $s2,$s0
+      		add $t0,$t0,1
+      		jal elevarValorDeX
+      		
+      		addi $t3,$zero,1		# Contador multiplicación
+      		ldc1 $f8,ceroFlotante		# Auxiliar = 0
+      		add.d $f6,$f4,$f8		# Auxiliar para multiplicar por si mismo
+      		j multiplicarElevado		# Multiplica numero por si mismo (n * n)
+      		
+      	multiplicarElevado:
+      		beq $t3,$s0,retornarCalculoAnidado
+      		add.d $f4,$f4,$f6			
+      		add $t3,$t3,1
+      		j multiplicarElevado
+      		
+      calcularSumatoria:
+      		beq $t8,1,sumarDivision
+      		j restarDivision
+      		
+      	sumarDivision:
+      		add.d $f12,$f12,$f0
+      		addi $t8,$zero,0
+      		j retornarCalculo
+      	restarDivision:
+      		sub.d $f12,$f12,$f0
+      		addi $t8,$zero,1
+      		j retornarCalculo
+      		
+      	# 5.------------------------------------- Retornos -----------------------------------------------
+      	
+      	retornarCalculo:
+      		jr $ra
+      		
+      	retornarCalculoAnidado:
+      		lw $ra,($sp)
+		lw $s2,4($sp)
+		addi $sp,$sp,8
+		jr $ra	
+      		
+      	retornarCalculoAnidadoFunciones:
+      		lw $ra,($sp)		# Recuperando retorno a main
+		addi $sp,$sp,4		# liberando espacio solicitado
+      		jr $ra			
+      		
+      	
+      	fin:
+      		addi $v0, $zero, 10	
+		syscall	# usamos la syscall 10 para salir del programa (exit(0))

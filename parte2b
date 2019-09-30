@@ -1,0 +1,54 @@
+.data
+	entero: .word 4
+	mensajeSalida: .asciiz "El factorial es: "
+.text
+	main:	
+		lw $a0,entero($zero)	# $a0 = entero (argumento)
+		addi $t1,$zero,1	# salida inicial = 1
+		jal calcularFactorial
+		
+		li $v0,4
+      		la $a0, mensajeSalida	#Imprime mensaje en pantalla
+      		syscall
+      		
+      		li $v0,1
+      		add $a0,$zero,$t1	#Imprime mensaje en pantalla
+      		syscall
+      		
+      		addi $v0, $zero, 10	
+		syscall			# usamos la syscall 10 para salir del programa (exit(0))
+	
+	calcularFactorial:
+		addi $sp,$sp,-8		#aumentando espacio de stack
+		sw $ra,($sp)		#guardando dirección de retorno
+		sw $s0,4($sp)		#guardando espacio variable entero anterior
+		
+		# Caso base
+		
+		beq $a0,0,finalizarCalculo
+		
+		move $s0,$a0		#Guardar $s0 = entero (n)
+		sub $a0,$a0,1		#entero = entero - 1 (n-1)
+		jal calcularFactorial	
+
+		
+		addi $t0,$zero,1	#contador multiplación = 0
+		addi $t2,$t1,0		#auxiliar = n
+		j multiplicarIterativo
+	 
+		
+	finalizarCalculo:
+		lw $ra,($sp)
+		lw $s0,4($sp)
+		addi $sp,$sp,8
+		jr $ra
+		
+		
+	multiplicarIterativo:
+		beq $t0,$s0,finalizarCalculo	# Se repite n veces el factorial(n-1)
+		add $t1,$t1,$t2			# auxiliar = auxiliar + n
+		add $t0,$t0,1			# contador = contador + 1
+		j multiplicarIterativo
+		
+			
+	

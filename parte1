@@ -1,0 +1,66 @@
+.data 
+	primerMensaje: .asciiz "Por favor ingrese el primer entero: "
+	segundoMensaje: .asciiz "Por favor ingrese el segundo entero: "
+	primeraSalida: .asciiz "El minimo es: "
+	segundaSalida: .asciiz "Ambos valores son iguales"
+	saltoLinea: .asciiz "\n"
+	
+.text	
+
+	obtenerNumeros:
+		jal solicitarPrimerNumero
+		move $s0, $v0		#Envía primer numero a registro $s0
+      		
+      		jal solicitarSegundoNumero
+      		move $s1, $v0		#Envía segundo numero a registro $s1
+      		
+      		j encontrarMinimo
+      		
+	solicitarPrimerNumero:
+		li $v0,4
+      		la $a0, primerMensaje	#Imprime mensaje en pantalla
+      		syscall  
+      		li $v0, 5		#Recibe primer numero
+		syscall
+      		jr $ra
+      		
+      	solicitarSegundoNumero:
+		li $v0,4	
+      		la $a0, segundoMensaje	#Imprime mensaje en pantalla
+      		syscall  
+      		li $v0, 5		#Recibe segundo numero
+		syscall
+      		jr $ra
+      		
+	encontrarMinimo:
+		sub $t0,$s0,$s1				#$t0 = $s0 - $s1
+		blt $t0,0, mostrarMinimoPrimero		#si $t0 < 0
+		bgt $t0,0, mostrarMinimoSegundo		#si $t0 > 0
+		beq $t0,0, mostrarIguales		#si $t0 == 0
+		
+	mostrarMinimoPrimero:
+		li $v0,4
+      		la $a0, primeraSalida	#Imprime mensaje en pantalla
+      		syscall  
+      		li $v0,1
+      		add $a0,$zero,$s0	#Muestra primer numero en pantalla
+      		syscall  
+		j salida
+		
+	mostrarMinimoSegundo:
+		li $v0,4
+      		la $a0, primeraSalida	#Imprime mensaje en pantalla
+      		syscall  
+      		li $v0,1		
+      		add $a0, $zero, $s1	#Muestra segundo numero en pantalla
+      		syscall  
+      		j salida
+	
+	mostrarIguales:
+		li $v0,4
+      		la $a0, segundaSalida	#Imprime mensaje en pantalla
+      		syscall  
+	
+	salida:	
+		addi $v0, $zero, 10	
+		syscall	# usamos la syscall 10 para salir del programa (exit(0))
