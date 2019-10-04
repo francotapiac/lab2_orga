@@ -1,6 +1,6 @@
 .data
-	dividendo: .word 1
-	divisor: .word 1
+	dividendo: .word 10
+	divisor: .word 27
 	parteEntera: .double 1.00
 	parteDecima: .double 0.10
 	parteCentesima: .double 0.01
@@ -11,7 +11,7 @@
 
 	main:
 		lw $s0,dividendo($zero)	# dividendo
-		lw $s1,divisor($zero)	# divisor
+		lw $a1,divisor($zero)	# divisor
 		addi $t0,$s0,0		# resto
 		addi $t1,$zero,0	# salida auxiliar = 0 (contador)
 		
@@ -38,22 +38,22 @@
 		add $t1,$s2,0		# largo iteración
 		add.d $f8,$f0,$f6	# $f8 = 1.00
 		add.d $f10,$f6,$f6	# salida auxiliar parte entera = 0
-		jal multiplicarDouble
-		add.d $f0,$f10,$f6	# salida verdadera parte entera
+		jal multiplicarDouble	# representación entera de resultado
+		add.d $f0,$f10,$f6	# f0 = salida verdadera parte entera
 		
 		addi $t0,$zero,0	# contador = 0
 		add $t1,$s3,0		# largo iteración
 		add.d $f8,$f2,$f6	# $f8 = 0.10
 		add.d $f10,$f6,$f6	# salida auxiliar parte decima = 0
-		jal multiplicarDouble
-		add.d $f2,$f10,$f6	# salida verdadera parte decima
+		jal multiplicarDouble	# representación decimal de resultado
+		add.d $f2,$f10,$f6	# f2 = salida verdadera parte decima
 		
 		addi $t0,$zero,0	# contador = 0
 		add $t1,$s4,0		# largo iteración
 		add.d $f8,$f4,$f6	# $f8 = 0.01
 		add.d $f10,$f6,$f6	# salida auxiliar parte entera = 0
-		jal multiplicarDouble
-		add.d $f4,$f10,$f6	# salida verdadera parte centesima
+		jal multiplicarDouble	# representación decimal de resultado
+		add.d $f4,$f10,$f6	# f4 = salida verdadera parte centesima
 		
 		add.d $f0,$f0,$f2	# parte entera + parte decima (x.00 + 0.y0)
 		add.d $f0,$f0,$f4	# parte entera + parte decima + parte centesima 
@@ -72,8 +72,8 @@
 		syscall		
 		
 	dividirIterativo:
-		blt $t0,$s1,guardarDatos
-		sub $t0,$t0,$s1		# numero = numero  - divisor (resto)
+		blt $t0,$a1,guardarDatos
+		sub $t0,$t0,$a1		# numero = numero  - divisor (resto)
 		addi $t1,$t1,1		# cantidad de veces que cabe el divisor en numero
 		j dividirIterativo
 	

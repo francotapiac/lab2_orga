@@ -2,9 +2,9 @@
 	
 	solicitarNumero: .asciiz "Por favor, ingrese un entero no negativo: "
 	solicitarGrado: .asciiz "Ingrese el orden: "
-	entregarResultadoSeno: .asciiz "seno =  "
-	entregarResultadoCoseno: .asciiz "coseno = "
-	entregarResultadoExp: .asciiz "exponencial = "
+	entregarResultadoSeno: .asciiz "sen(x) =  "
+	entregarResultadoCoseno: .asciiz "cos(x) = "
+	entregarResultadoExp: .asciiz "exp(x) = "
 	saltoLinea: .asciiz "\n"
 	
 	ceroFlotante: .double 0.00
@@ -29,7 +29,7 @@
 					#                    1: resultado división positivo)
 		ldc1 $f12,ceroFlotante
 		jal calcularSeno
-		add.d $f14,$f12,$f14	
+		add.d $f14,$f12,$f14	# $f14 = resultado sen(x)
 		jal mostrarResultadoSeno
 		jal mostrarSaltoLinea
 		
@@ -38,14 +38,14 @@
 					#                    1: resultado división positivo)
 		ldc1 $f12,ceroFlotante
 		jal calcularCoseno
-		add.d $f16,$f12,$f16	
+		add.d $f16,$f12,$f16	# $f16 = resultado cos(x)
 		jal mostrarResultadoCoseno
 		jal mostrarSaltoLinea
 		
 		addi $t9,$zero,0	# $t9 = 0 (contador de grado)
 		ldc1 $f12,ceroFlotante
 		jal calcularExponencial
-		add.d $f18,$f12,$f18	
+		add.d $f18,$f12,$f18	# $f18 = resultado exp(x)
 		jal mostrarResultadoExponencial
 		
 		
